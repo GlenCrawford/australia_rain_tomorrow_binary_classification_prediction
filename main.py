@@ -1,20 +1,19 @@
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow import feature_column
-
 import numpy as np
 import pandas as pd
+import missingno as msno
+import sklearn
+from sklearn import impute
 
 ### Load the input data ###
 
 INPUT_DATA_PATH = 'data.csv'
 INPUT_DATA_COLUMN_NAMES = ['Date', 'Location', 'MinTemp', 'MaxTemp', 'Rainfall', 'Evaporation', 'Sunshine', 'WindGustDir', 'WindGustSpeed', 'WindDir9am', 'WindDir3pm', 'WindSpeed9am', 'WindSpeed3pm', 'Humidity9am', 'Humidity3pm', 'Pressure9am', 'Pressure3pm', 'Cloud9am', 'Cloud3pm', 'Temp9am', 'Temp3pm', 'RainToday', 'RISK_MM', 'RainTomorrow']
-INPUT_DATA_COLUMNS_TO_USE = ['Location', 'RainTomorrow']
-
-# Note: Column 'RainTomorrow' has discrete values 'No' and 'Yes'; map it to zero and one.
+INPUT_DATA_COLUMNS_TO_USE = ['Location', 'MinTemp', 'RainTomorrow']
 
 # Columns to go through:
-# 'MinTemp'
 # 'MaxTemp'
 # 'Rainfall'
 # 'Evaporation'
@@ -33,7 +32,6 @@ INPUT_DATA_COLUMNS_TO_USE = ['Location', 'RainTomorrow']
 # 'Cloud3pm'
 # 'Temp9am'
 # 'Temp3pm'
-# 'RainToday'
 
 BATCH_SIZE = 5 # 500
 
@@ -50,12 +48,24 @@ data_set = tf.data.experimental.make_csv_dataset(
   select_columns = INPUT_DATA_COLUMNS_TO_USE,
   header = True,
   num_epochs = 1,
-  shuffle = True, # True
+  shuffle = True,
   shuffle_buffer_size = 1000000, # 100000000
   ignore_errors = False
 )
 
 ### Data preprocessing ###
+
+# Use Pandas to do some basic preprocessing first.
+def transform_input_data():
+  data_frame = pd.read_csv('data_original.csv', header = 0)
+
+  # Remove rows with NaNs. Reduces from 142193 to 56420 rows. Some of the columns with NaNs have tens of thousands of them; too many to impute.
+  data_frame = data_frame.dropna()
+
+  # Column 'RainTomorrow' has discrete values 'No' and 'Yes'; map it to zero and one.
+  data_frame['RainTomorrow'] = data_frame['RainTomorrow'].map({'No': 0, 'Yes': 1})
+
+  data_frame.to_csv(INPUT_DATA_PATH, na_rep = 'NA', index = False)
 
 # Print what a single batch looks like.
 def show_data_set_batch():
@@ -87,4 +97,9 @@ show_data_set_batch()
 LOCATION_COLUMN_CATEGORIES = ['Albury', 'BadgerysCreek', 'Cobar', 'CoffsHarbour', 'Moree', 'Newcastle', 'NorahHead', 'NorfolkIsland', 'Penrith', 'Richmond', 'Sydney', 'SydneyAirport', 'WaggaWagga', 'Williamtown', 'Wollongong', 'Canberra', 'Tuggeranong', 'MountGinini', 'Ballarat', 'Bendigo', 'Sale', 'MelbourneAirport', 'Melbourne', 'Mildura', 'Nhil', 'Portland', 'Watsonia', 'Dartmoor', 'Brisbane', 'Cairns', 'GoldCoast', 'Townsville', 'Adelaide', 'MountGambier', 'Nuriootpa', 'Woomera', 'Albany', 'Witchcliffe', 'PearceRAAF', 'PerthAirport', 'Perth', 'SalmonGums', 'Walpole', 'Hobart', 'Launceston', 'AliceSprings', 'Darwin', 'Katherine', 'Uluru']
 location_feature_column = feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Location', LOCATION_COLUMN_CATEGORIES))
 feature_columns.append(location_feature_column)
-pass_example_batch_through_feature_column(location_feature_column)
+
+# Feature: MinTemp. ?.
+# MinTemp
+# print('------')
+# print(example_batch)
+# pass_example_batch_through_feature_column(location_feature_column)

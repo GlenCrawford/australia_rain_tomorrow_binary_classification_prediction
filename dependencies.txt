@@ -1,3 +1,5 @@
 tensorflow==2.1.0
 numpy==1.17.4
 pandas==0.25.3
+missingno==0.4.2
+scikit-learn==0.22.1
