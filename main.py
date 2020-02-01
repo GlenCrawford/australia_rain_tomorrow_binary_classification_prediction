@@ -15,6 +15,7 @@ INPUT_DATA_COLUMNS_TO_USE = ['Location', 'MinTemp', 'MaxTemp', 'Rainfall', 'Evap
 
 NUMERIC_COLUMNS_TO_SCALE = ['MinTemp', 'MaxTemp', 'Rainfall', 'Evaporation', 'Sunshine', 'WindGustSpeed', 'WindSpeed9am', 'WindSpeed3pm', 'Humidity9am', 'Humidity3pm', 'Pressure9am', 'Pressure3pm', 'Cloud9am', 'Cloud3pm', 'Temp9am', 'Temp3pm']
 
+TEST_DATA_SET_SIZE = 1000
 BATCH_SIZE = 10
 
 LOCATION_COLUMN_CATEGORIES = ['Albury', 'BadgerysCreek', 'Cobar', 'CoffsHarbour', 'Moree', 'Newcastle', 'NorahHead', 'NorfolkIsland', 'Penrith', 'Richmond', 'Sydney', 'SydneyAirport', 'WaggaWagga', 'Williamtown', 'Wollongong', 'Canberra', 'Tuggeranong', 'MountGinini', 'Ballarat', 'Bendigo', 'Sale', 'MelbourneAirport', 'Melbourne', 'Mildura', 'Nhil', 'Portland', 'Watsonia', 'Dartmoor', 'Brisbane', 'Cairns', 'GoldCoast', 'Townsville', 'Adelaide', 'MountGambier', 'Nuriootpa', 'Woomera', 'Albany', 'Witchcliffe', 'PearceRAAF', 'PerthAirport', 'Perth', 'SalmonGums', 'Walpole', 'Hobart', 'Launceston', 'AliceSprings', 'Darwin', 'Katherine', 'Uluru']
@@ -25,7 +26,7 @@ np.set_printoptions(precision = 3, suppress = True)
 
 ### Load the data ###
 
-data_set = tf.data.experimental.make_csv_dataset(
+full_data_set = tf.data.experimental.make_csv_dataset(
   INPUT_DATA_PATH,
   batch_size = BATCH_SIZE,
   column_names = INPUT_DATA_COLUMN_NAMES,
@@ -34,9 +35,13 @@ data_set = tf.data.experimental.make_csv_dataset(
   header = True,
   num_epochs = 1,
   shuffle = True,
-  shuffle_buffer_size = 100000000, # 100000000
+  shuffle_buffer_size = 100000000,
   ignore_errors = False
 )
+
+# Split the full data set up into two, one for training and one for testing.
+test_data_set = full_data_set.take(TEST_DATA_SET_SIZE) # 1,000
+train_data_set = full_data_set.skip(TEST_DATA_SET_SIZE) # 55,421
 
 ### Data preprocessing ###
 
@@ -57,7 +62,7 @@ def normalize_and_transform_input_data():
   data_frame.to_csv(INPUT_DATA_PATH, na_rep = 'NA', index = False)
 
 # Print what a single batch looks like.
-def show_data_set_batch():
+def show_data_set_batch(data_set):
   for features, labels in data_set.take(1):
     for feature, values in features.items():
       print("{:9s}: {}".format(feature, values.numpy()))
@@ -72,13 +77,13 @@ def pass_example_batch_through_feature_column(feature_column):
 # normalize_and_transform_input_data()
 
 # Get a batch so we can look at some example values.
-example_batch = next(iter(data_set))[0]
+example_batch = next(iter(train_data_set))[0]
 
 feature_columns = []
 
 # Take a look at the example batch.
 print('\nExample batch:')
-show_data_set_batch()
+show_data_set_batch(train_data_set)
 
 # Go through each of the columns in the file, inspecting each one, discarding the ones that we don't want.
 # For the ones that look to be possibly related to the label, build a feature column and preprocess as needed.
@@ -164,3 +169,40 @@ feature_columns.append(temp_9am_feature_column)
 temp_3pm_feature_column = feature_column.numeric_column('Temp3pm')
 feature_columns.append(temp_3pm_feature_column)
 
+### Define the model ###
+
+model = tf.keras.Sequential([
+  tf.keras.layers.DenseFeatures(feature_columns),
+  tf.keras.layers.Dense(16, activation = 'relu'),
+  tf.keras.layers.Dense(1, activation = 'sigmoid')
+])
+
+model.compile(
+  optimizer = 'adam',
+  loss = 'binary_crossentropy',
+  metrics = ['binary_accuracy']
+)
+
+### Train the model ###
+
+print('\nTraining:')
+
+model.fit(
+  train_data_set,
+  epochs = 5
+)
+
+print('\nModel architecture:')
+model.summary()
+
+### Test the model ###
+
+print('\nTesting:')
+
+test_loss, test_accuracy = model.evaluate(
+  test_data_set,
+  verbose = 1
+)
+
+print('Test run loss: ' + str(test_loss))
+print('Test run accuracy: ' + str(test_accuracy))
