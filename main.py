@@ -9,6 +9,7 @@ from sklearn import preprocessing
 
 ### Load the input data ###
 
+RAW_DATA_PATH = 'data_original.csv'
 INPUT_DATA_PATH = 'data.csv'
 INPUT_DATA_COLUMN_NAMES = ['Date', 'Location', 'MinTemp', 'MaxTemp', 'Rainfall', 'Evaporation', 'Sunshine', 'WindGustDir', 'WindGustSpeed', 'WindDir9am', 'WindDir3pm', 'WindSpeed9am', 'WindSpeed3pm', 'Humidity9am', 'Humidity3pm', 'Pressure9am', 'Pressure3pm', 'Cloud9am', 'Cloud3pm', 'Temp9am', 'Temp3pm', 'RainToday', 'RISK_MM', 'RainTomorrow']
 INPUT_DATA_COLUMNS_TO_USE = ['Location', 'MinTemp', 'MaxTemp', 'Rainfall', 'Evaporation', 'Sunshine', 'WindGustDir', 'WindGustSpeed', 'WindDir9am', 'WindDir3pm', 'WindSpeed9am', 'WindSpeed3pm', 'Humidity9am', 'Humidity3pm', 'Pressure9am', 'Pressure3pm', 'Cloud9am', 'Cloud3pm', 'Temp9am', 'Temp3pm', 'RainTomorrow']
@@ -16,7 +17,7 @@ INPUT_DATA_COLUMNS_TO_USE = ['Location', 'MinTemp', 'MaxTemp', 'Rainfall', 'Evap
 NUMERIC_COLUMNS_TO_SCALE = ['MinTemp', 'MaxTemp', 'Rainfall', 'Evaporation', 'Sunshine', 'WindGustSpeed', 'WindSpeed9am', 'WindSpeed3pm', 'Humidity9am', 'Humidity3pm', 'Pressure9am', 'Pressure3pm', 'Cloud9am', 'Cloud3pm', 'Temp9am', 'Temp3pm']
 
 TEST_DATA_SET_SIZE = 1000
-BATCH_SIZE = 10
+BATCH_SIZE = 5
 
 LOCATION_COLUMN_CATEGORIES = ['Albury', 'BadgerysCreek', 'Cobar', 'CoffsHarbour', 'Moree', 'Newcastle', 'NorahHead', 'NorfolkIsland', 'Penrith', 'Richmond', 'Sydney', 'SydneyAirport', 'WaggaWagga', 'Williamtown', 'Wollongong', 'Canberra', 'Tuggeranong', 'MountGinini', 'Ballarat', 'Bendigo', 'Sale', 'MelbourneAirport', 'Melbourne', 'Mildura', 'Nhil', 'Portland', 'Watsonia', 'Dartmoor', 'Brisbane', 'Cairns', 'GoldCoast', 'Townsville', 'Adelaide', 'MountGambier', 'Nuriootpa', 'Woomera', 'Albany', 'Witchcliffe', 'PearceRAAF', 'PerthAirport', 'Perth', 'SalmonGums', 'Walpole', 'Hobart', 'Launceston', 'AliceSprings', 'Darwin', 'Katherine', 'Uluru']
 DIRECTION_COLUMN_CATEGORIES = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'] # Cardinal, intercardinal and secondary intercardinal directions.
@@ -40,14 +41,14 @@ full_data_set = tf.data.experimental.make_csv_dataset(
 )
 
 # Split the full data set up into two, one for training and one for testing.
-test_data_set = full_data_set.take(TEST_DATA_SET_SIZE) # 1,000
-train_data_set = full_data_set.skip(TEST_DATA_SET_SIZE) # 55,421
+test_data_set = full_data_set.take(TEST_DATA_SET_SIZE)
+train_data_set = full_data_set.skip(TEST_DATA_SET_SIZE)
 
 ### Data preprocessing ###
 
 # Use Pandas to do some basic preprocessing first.
 def normalize_and_transform_input_data():
-  data_frame = pd.read_csv('data_original.csv', header = 0)
+  data_frame = pd.read_csv(RAW_DATA_PATH, header = 0)
 
   # Remove rows with NaNs. Reduces from 142193 to 56420 rows. Some of the columns with NaNs have tens of thousands of them; too many to impute.
   data_frame = data_frame.dropna()
@@ -73,8 +74,6 @@ def pass_example_batch_through_feature_column(feature_column):
   feature_layer = tf.keras.layers.DenseFeatures(feature_column)
   print('\n\nFeature column result for example batch:')
   print(feature_layer(example_batch).numpy())
-
-# normalize_and_transform_input_data()
 
 # Get a batch so we can look at some example values.
 example_batch = next(iter(train_data_set))[0]
