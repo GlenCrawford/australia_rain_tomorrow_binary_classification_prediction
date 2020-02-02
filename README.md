@@ -27,13 +27,13 @@ This is done as a two-step process to speed up the runtime: when required, the `
 
 The following columns were skipped and not used as features for the model; all the rest were used:
 
-* Date: Not relevant.
+* __Date:__ Not relevant.
 
-* RainToday: This is just a boolean representation of the column "Rainfall".
+* __RainToday:__ This is just a boolean representation of the numeric column "Rainfall". Experimented with adding this feature to the model, but had no effect on accuracy.
 
-* RISK_MM: This is the amount of rain for the following day. This was used to create the label/target column "RainTomorrow". This would be used if the model was doing regression, rather than classification.
+* __RISK_MM:__ This is the amount of rain for the following day. This was used to create the label/target column "RainTomorrow". This would be used if the model was doing regression, rather than classification.
 
-* RainTomorrow: Used as the training label/target.
+* __RainTomorrow:__ Used as the training label/target.
 
 The output of the model is just a single sigmoid-activation neuron which predicts target variable "RainTomorrow".
 

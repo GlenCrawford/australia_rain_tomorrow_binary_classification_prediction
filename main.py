@@ -13,7 +13,7 @@ from sklearn import preprocessing
 RAW_DATA_PATH = 'data_original.csv'
 INPUT_DATA_PATH = 'data.csv'
 INPUT_DATA_COLUMN_NAMES = ['Date', 'Location', 'MinTemp', 'MaxTemp', 'Rainfall', 'Evaporation', 'Sunshine', 'WindGustDir', 'WindGustSpeed', 'WindDir9am', 'WindDir3pm', 'WindSpeed9am', 'WindSpeed3pm', 'Humidity9am', 'Humidity3pm', 'Pressure9am', 'Pressure3pm', 'Cloud9am', 'Cloud3pm', 'Temp9am', 'Temp3pm', 'RainToday', 'RISK_MM', 'RainTomorrow']
-INPUT_DATA_COLUMNS_TO_USE = ['Location', 'MinTemp', 'MaxTemp', 'Rainfall', 'Evaporation', 'Sunshine', 'WindGustDir', 'WindGustSpeed', 'WindDir9am', 'WindDir3pm', 'WindSpeed9am', 'WindSpeed3pm', 'Humidity9am', 'Humidity3pm', 'Pressure9am', 'Pressure3pm', 'Cloud9am', 'Cloud3pm', 'Temp9am', 'Temp3pm', 'RainTomorrow']
+INPUT_DATA_COLUMNS_TO_USE = ['Location', 'MinTemp', 'MaxTemp', 'Rainfall', 'Evaporation', 'Sunshine', 'WindGustDir', 'WindGustSpeed', 'WindDir9am', 'WindDir3pm', 'WindSpeed9am', 'WindSpeed3pm', 'Humidity9am', 'Humidity3pm', 'Pressure9am', 'Pressure3pm', 'Cloud9am', 'Cloud3pm', 'Temp9am', 'Temp3pm', 'RainToday', 'RainTomorrow']
 
 NUMERIC_COLUMNS_TO_SCALE = ['MinTemp', 'MaxTemp', 'Rainfall', 'Evaporation', 'Sunshine', 'WindGustSpeed', 'WindSpeed9am', 'WindSpeed3pm', 'Humidity9am', 'Humidity3pm', 'Pressure9am', 'Pressure3pm', 'Cloud9am', 'Cloud3pm', 'Temp9am', 'Temp3pm']
 
@@ -22,6 +22,7 @@ BATCH_SIZE = 5
 
 LOCATION_COLUMN_CATEGORIES = ['Albury', 'BadgerysCreek', 'Cobar', 'CoffsHarbour', 'Moree', 'Newcastle', 'NorahHead', 'NorfolkIsland', 'Penrith', 'Richmond', 'Sydney', 'SydneyAirport', 'WaggaWagga', 'Williamtown', 'Wollongong', 'Canberra', 'Tuggeranong', 'MountGinini', 'Ballarat', 'Bendigo', 'Sale', 'MelbourneAirport', 'Melbourne', 'Mildura', 'Nhil', 'Portland', 'Watsonia', 'Dartmoor', 'Brisbane', 'Cairns', 'GoldCoast', 'Townsville', 'Adelaide', 'MountGambier', 'Nuriootpa', 'Woomera', 'Albany', 'Witchcliffe', 'PearceRAAF', 'PerthAirport', 'Perth', 'SalmonGums', 'Walpole', 'Hobart', 'Launceston', 'AliceSprings', 'Darwin', 'Katherine', 'Uluru']
 DIRECTION_COLUMN_CATEGORIES = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'] # Cardinal, intercardinal and secondary intercardinal directions.
+BOOLEAN_COLUMN_CATEGORIES = [0, 1]
 
 LOG_DIRECTORY = 'logs/fit/' + datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
 
@@ -56,7 +57,8 @@ def normalize_and_transform_input_data():
   # Remove rows with NaNs. Reduces from 142193 to 56420 rows. Some of the columns with NaNs have tens of thousands of them; too many to impute.
   data_frame = data_frame.dropna()
 
-  # Column 'RainTomorrow' has discrete values 'No' and 'Yes'; map it to zero and one.
+  # Columns 'RainToday' and 'RainTomorrow' have discrete values 'No' and 'Yes'; map them to zero and one.
+  data_frame['RainToday'] = data_frame['RainToday'].map({'No': 0, 'Yes': 1})
   data_frame['RainTomorrow'] = data_frame['RainTomorrow'].map({'No': 0, 'Yes': 1})
 
   # Scale/normalize numeric columns by calculating the z-score of each value.
@@ -64,6 +66,8 @@ def normalize_and_transform_input_data():
   data_frame[NUMERIC_COLUMNS_TO_SCALE] = z_score_scaler.fit_transform(data_frame[NUMERIC_COLUMNS_TO_SCALE].to_numpy())
 
   data_frame.to_csv(INPUT_DATA_PATH, na_rep = 'NA', index = False)
+
+#normalize_and_transform_input_data()
 
 # Print what a single batch looks like.
 def show_data_set_batch(data_set):
@@ -170,6 +174,11 @@ feature_columns.append(temp_9am_feature_column)
 # Feature: Temp3pm. Numeric, pre-scaled.
 temp_3pm_feature_column = feature_column.numeric_column('Temp3pm')
 feature_columns.append(temp_3pm_feature_column)
+
+# Feature: RainToday. Boolean feature (values: 0 and 1), treat it as categorical, use one-hot encoding.
+# This is just a boolean representation of the "Rainfall" column. Removed since it has no additional effect on model accuracy.
+# rain_today_feature_column = feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('RainToday', BOOLEAN_COLUMN_CATEGORIES))
+# feature_columns.append(rain_today_feature_column)
 
 ### Define the model ###
 
