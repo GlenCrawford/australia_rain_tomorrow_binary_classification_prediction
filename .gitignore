@@ -1,6 +1,5 @@
-# For now, keep the training data out of the repository (may include later on).
+# Training and testing data after preprocessing.
 /data.csv
-/data_original.csv
 
 # TensorBoard logging.
 /logs/fit/*

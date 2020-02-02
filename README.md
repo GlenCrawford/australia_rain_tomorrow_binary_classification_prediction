@@ -23,7 +23,7 @@ The data was sourced from this [Kaggle dataset](https://www.kaggle.com/jsphyg/we
 
 Data preprocessing is done by a combination of Pandas (to drop NaN rows and map Yes/No strings into 1/0 binary integers), scikit-learn (to scale/normalize numeric columns by calculating the z-score of each of their values), and Tensorflow to apply one-hot encoding to categorical columns. The model's input layer is thus a combination of pre-normalized numeric columns and one-hot encoded categorical columns.
 
-This is done as a two-step process to speed up the runtime: when required, the `normalize_and_transform_input_data` method reads the CSV with the original dataset, applies the preprocessing transformations, and exports the result to a new CSV file. Subsequent executions of the file simply read the latter file, rather than run the preprocessing every time.
+This is done as a two-step process to speed up the runtime: when required, the `normalize_and_transform_input_data` method reads the CSV with the original dataset (`raw_data.csv`), applies the preprocessing transformations, and exports the result to a new CSV file (`data.csv`). Subsequent executions of the file simply read the latter file, rather than run the preprocessing every time.
 
 The following columns were skipped and not used as features for the model; all the rest were used:
 
@@ -47,13 +47,13 @@ Install the dependencies:
 pip install -r dependencies.txt
 ```
 
-Download the dataset from the source above, and save in the project directory as `data_original.csv`.
-
 ## Run
 
 ```bash
 python -W ignore main.py
 ```
+
+Note that there is a [current bug in TensorFlow](https://github.com/tensorflow/tensorflow/issues/30609) where deprecation warnings are printed at the usage of feature columns, even though the new feature column API is indeed being used. It has been fixed and will be in a future release of TensorFlow. In the meantime, will just have to live with the warning output.
 
 ## Monitoring/logging
 

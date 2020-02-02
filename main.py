@@ -10,7 +10,7 @@ from sklearn import preprocessing
 
 ### Load the input data ###
 
-RAW_DATA_PATH = 'data_original.csv'
+RAW_DATA_PATH = 'raw_data.csv'
 INPUT_DATA_PATH = 'data.csv'
 INPUT_DATA_COLUMN_NAMES = ['Date', 'Location', 'MinTemp', 'MaxTemp', 'Rainfall', 'Evaporation', 'Sunshine', 'WindGustDir', 'WindGustSpeed', 'WindDir9am', 'WindDir3pm', 'WindSpeed9am', 'WindSpeed3pm', 'Humidity9am', 'Humidity3pm', 'Pressure9am', 'Pressure3pm', 'Cloud9am', 'Cloud3pm', 'Temp9am', 'Temp3pm', 'RainToday', 'RISK_MM', 'RainTomorrow']
 INPUT_DATA_COLUMNS_TO_USE = ['Location', 'MinTemp', 'MaxTemp', 'Rainfall', 'Evaporation', 'Sunshine', 'WindGustDir', 'WindGustSpeed', 'WindDir9am', 'WindDir3pm', 'WindSpeed9am', 'WindSpeed3pm', 'Humidity9am', 'Humidity3pm', 'Pressure9am', 'Pressure3pm', 'Cloud9am', 'Cloud3pm', 'Temp9am', 'Temp3pm', 'RainToday', 'RainTomorrow']
@@ -28,25 +28,6 @@ LOG_DIRECTORY = 'logs/fit/' + datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
 
 # Make numpy values easier to read.
 np.set_printoptions(precision = 3, suppress = True)
-
-### Load the data ###
-
-full_data_set = tf.data.experimental.make_csv_dataset(
-  INPUT_DATA_PATH,
-  batch_size = BATCH_SIZE,
-  column_names = INPUT_DATA_COLUMN_NAMES,
-  label_name = 'RainTomorrow',
-  select_columns = INPUT_DATA_COLUMNS_TO_USE,
-  header = True,
-  num_epochs = 1,
-  shuffle = True,
-  shuffle_buffer_size = 100000000,
-  ignore_errors = False
-)
-
-# Split the full data set up into two, one for training and one for testing.
-test_data_set = full_data_set.take(TEST_DATA_SET_SIZE)
-train_data_set = full_data_set.skip(TEST_DATA_SET_SIZE)
 
 ### Data preprocessing ###
 
@@ -67,7 +48,9 @@ def normalize_and_transform_input_data():
 
   data_frame.to_csv(INPUT_DATA_PATH, na_rep = 'NA', index = False)
 
-#normalize_and_transform_input_data()
+normalize_and_transform_input_data()
+
+### Load the preprocessed data ###
 
 # Print what a single batch looks like.
 def show_data_set_batch(data_set):
@@ -76,11 +59,22 @@ def show_data_set_batch(data_set):
       print("{:9s}: {}".format(feature, values.numpy()))
     print('Labels:   ' + str(labels))
 
-# Helper function to take a feature column and pass the example batch through it, in order to test preprocessing done in the feature column.
-def pass_example_batch_through_feature_column(feature_column):
-  feature_layer = tf.keras.layers.DenseFeatures(feature_column)
-  print('\n\nFeature column result for example batch:')
-  print(feature_layer(example_batch).numpy())
+full_data_set = tf.data.experimental.make_csv_dataset(
+  INPUT_DATA_PATH,
+  batch_size = BATCH_SIZE,
+  column_names = INPUT_DATA_COLUMN_NAMES,
+  label_name = 'RainTomorrow',
+  select_columns = INPUT_DATA_COLUMNS_TO_USE,
+  header = True,
+  num_epochs = 1,
+  shuffle = True,
+  shuffle_buffer_size = 100000000,
+  ignore_errors = False
+)
+
+# Split the full data set up into two, one for training and one for testing.
+test_data_set = full_data_set.take(TEST_DATA_SET_SIZE)
+train_data_set = full_data_set.skip(TEST_DATA_SET_SIZE)
 
 # Get a batch so we can look at some example values.
 example_batch = next(iter(train_data_set))[0]
@@ -90,6 +84,14 @@ feature_columns = []
 # Take a look at the example batch.
 print('\nExample batch:')
 show_data_set_batch(train_data_set)
+
+### Build the feature columns for the input layer ###
+
+# Helper function to take a feature column and pass the example batch through it, in order to test preprocessing done in the feature column.
+def pass_example_batch_through_feature_column(feature_column):
+  feature_layer = tf.keras.layers.DenseFeatures(feature_column)
+  print('\n\nFeature column result for example batch:')
+  print(feature_layer(example_batch).numpy())
 
 # Go through each of the columns in the file, inspecting each one, discarding the ones that we don't want.
 # For the ones that look to be possibly related to the label, build a feature column and preprocess as needed.
