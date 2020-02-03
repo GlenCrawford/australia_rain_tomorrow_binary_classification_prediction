@@ -1,6 +1,8 @@
 # Training and testing data after preprocessing.
 /data.csv
 
+/__pycache__/*.pyc
+
 # TensorBoard logging.
 /logs/fit/*
 

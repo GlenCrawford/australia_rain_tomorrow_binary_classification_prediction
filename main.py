@@ -1,54 +1,17 @@
 import datetime
+
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow import feature_column
-import numpy as np
-import pandas as pd
-import missingno as msno
-import sklearn
-from sklearn import preprocessing
 
-### Load the input data ###
-
-RAW_DATA_PATH = 'raw_data.csv'
-INPUT_DATA_PATH = 'data.csv'
-INPUT_DATA_COLUMN_NAMES = ['Date', 'Location', 'MinTemp', 'MaxTemp', 'Rainfall', 'Evaporation', 'Sunshine', 'WindGustDir', 'WindGustSpeed', 'WindDir9am', 'WindDir3pm', 'WindSpeed9am', 'WindSpeed3pm', 'Humidity9am', 'Humidity3pm', 'Pressure9am', 'Pressure3pm', 'Cloud9am', 'Cloud3pm', 'Temp9am', 'Temp3pm', 'RainToday', 'RISK_MM', 'RainTomorrow']
-INPUT_DATA_COLUMNS_TO_USE = ['Location', 'MinTemp', 'MaxTemp', 'Rainfall', 'Evaporation', 'Sunshine', 'WindGustDir', 'WindGustSpeed', 'WindDir9am', 'WindDir3pm', 'WindSpeed9am', 'WindSpeed3pm', 'Humidity9am', 'Humidity3pm', 'Pressure9am', 'Pressure3pm', 'Cloud9am', 'Cloud3pm', 'Temp9am', 'Temp3pm', 'RainToday', 'RainTomorrow']
-
-NUMERIC_COLUMNS_TO_SCALE = ['MinTemp', 'MaxTemp', 'Rainfall', 'Evaporation', 'Sunshine', 'WindGustSpeed', 'WindSpeed9am', 'WindSpeed3pm', 'Humidity9am', 'Humidity3pm', 'Pressure9am', 'Pressure3pm', 'Cloud9am', 'Cloud3pm', 'Temp9am', 'Temp3pm']
+import data_preprocessing
 
 TEST_DATA_SET_SIZE = 1000
 BATCH_SIZE = 5
 
-LOCATION_COLUMN_CATEGORIES = ['Albury', 'BadgerysCreek', 'Cobar', 'CoffsHarbour', 'Moree', 'Newcastle', 'NorahHead', 'NorfolkIsland', 'Penrith', 'Richmond', 'Sydney', 'SydneyAirport', 'WaggaWagga', 'Williamtown', 'Wollongong', 'Canberra', 'Tuggeranong', 'MountGinini', 'Ballarat', 'Bendigo', 'Sale', 'MelbourneAirport', 'Melbourne', 'Mildura', 'Nhil', 'Portland', 'Watsonia', 'Dartmoor', 'Brisbane', 'Cairns', 'GoldCoast', 'Townsville', 'Adelaide', 'MountGambier', 'Nuriootpa', 'Woomera', 'Albany', 'Witchcliffe', 'PearceRAAF', 'PerthAirport', 'Perth', 'SalmonGums', 'Walpole', 'Hobart', 'Launceston', 'AliceSprings', 'Darwin', 'Katherine', 'Uluru']
-DIRECTION_COLUMN_CATEGORIES = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'] # Cardinal, intercardinal and secondary intercardinal directions.
-BOOLEAN_COLUMN_CATEGORIES = [0, 1]
-
 LOG_DIRECTORY = 'logs/fit/' + datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
 
-# Make numpy values easier to read.
-np.set_printoptions(precision = 3, suppress = True)
-
-### Data preprocessing ###
-
-# Use Pandas to do some basic preprocessing first.
-def normalize_and_transform_input_data():
-  data_frame = pd.read_csv(RAW_DATA_PATH, header = 0)
-
-  # Remove rows with NaNs. Reduces from 142193 to 56420 rows. Some of the columns with NaNs have tens of thousands of them; too many to impute.
-  data_frame = data_frame.dropna()
-
-  # Columns 'RainToday' and 'RainTomorrow' have discrete values 'No' and 'Yes'; map them to zero and one.
-  data_frame['RainToday'] = data_frame['RainToday'].map({'No': 0, 'Yes': 1})
-  data_frame['RainTomorrow'] = data_frame['RainTomorrow'].map({'No': 0, 'Yes': 1})
-
-  # Scale/normalize numeric columns by calculating the z-score of each value.
-  z_score_scaler = sklearn.preprocessing.StandardScaler(copy = True)
-  data_frame[NUMERIC_COLUMNS_TO_SCALE] = z_score_scaler.fit_transform(data_frame[NUMERIC_COLUMNS_TO_SCALE].to_numpy())
-
-  data_frame.to_csv(INPUT_DATA_PATH, na_rep = 'NA', index = False)
-
-normalize_and_transform_input_data()
+data_preprocessing.normalize_and_transform_input_data()
 
 ### Load the preprocessed data ###
 
@@ -60,11 +23,11 @@ def show_data_set_batch(data_set):
     print('Labels:   ' + str(labels))
 
 full_data_set = tf.data.experimental.make_csv_dataset(
-  INPUT_DATA_PATH,
+  data_preprocessing.INPUT_DATA_PATH,
   batch_size = BATCH_SIZE,
-  column_names = INPUT_DATA_COLUMN_NAMES,
+  column_names = data_preprocessing.INPUT_DATA_COLUMN_NAMES,
   label_name = 'RainTomorrow',
-  select_columns = INPUT_DATA_COLUMNS_TO_USE,
+  select_columns = data_preprocessing.INPUT_DATA_COLUMNS_TO_USE,
   header = True,
   num_epochs = 1,
   shuffle = True,
@@ -98,7 +61,7 @@ def pass_example_batch_through_feature_column(feature_column):
 # (This is very repetitive, I deliberately did it the long way since this is a learning project.)
 
 # Feature: Location. Categorical feature (example values: Sydney, Perth, Newcastle), use one-hot encoding.
-location_feature_column = feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Location', LOCATION_COLUMN_CATEGORIES))
+location_feature_column = feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Location', data_preprocessing.LOCATION_COLUMN_CATEGORIES))
 feature_columns.append(location_feature_column)
 
 # Feature: MinTemp. Numeric, pre-scaled.
@@ -122,7 +85,7 @@ sunshine_feature_column = feature_column.numeric_column('Sunshine')
 feature_columns.append(sunshine_feature_column)
 
 # Feature: WindGustDir. Categorical feature (example values: E, SW, WNW), use one-hot encoding.
-wind_gust_dir_feature_column = feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('WindGustDir', DIRECTION_COLUMN_CATEGORIES))
+wind_gust_dir_feature_column = feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('WindGustDir', data_preprocessing.DIRECTION_COLUMN_CATEGORIES))
 feature_columns.append(wind_gust_dir_feature_column)
 
 # Feature: WindGustSpeed. Numeric, pre-scaled.
@@ -130,11 +93,11 @@ wind_gust_speed_feature_column = feature_column.numeric_column('WindGustSpeed')
 feature_columns.append(wind_gust_speed_feature_column)
 
 # Feature: WindDir9am. Categorical feature (example values: SE, NNW, WSW), use one-hot encoding.
-wind_dir_9am_feature_column = feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('WindDir9am', DIRECTION_COLUMN_CATEGORIES))
+wind_dir_9am_feature_column = feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('WindDir9am', data_preprocessing.DIRECTION_COLUMN_CATEGORIES))
 feature_columns.append(wind_dir_9am_feature_column)
 
 # Feature: WindDir3pm. Categorical feature (example values: NW, WSW, W), use one-hot encoding.
-wind_dir_3pm_feature_column = feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('WindDir3pm', DIRECTION_COLUMN_CATEGORIES))
+wind_dir_3pm_feature_column = feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('WindDir3pm', data_preprocessing.DIRECTION_COLUMN_CATEGORIES))
 feature_columns.append(wind_dir_3pm_feature_column)
 
 # Feature: WindSpeed9am. Numeric, pre-scaled.
@@ -179,7 +142,7 @@ feature_columns.append(temp_3pm_feature_column)
 
 # Feature: RainToday. Boolean feature (values: 0 and 1), treat it as categorical, use one-hot encoding.
 # This is just a boolean representation of the "Rainfall" column. Removed since it has no additional effect on model accuracy.
-# rain_today_feature_column = feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('RainToday', BOOLEAN_COLUMN_CATEGORIES))
+# rain_today_feature_column = feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('RainToday', data_preprocessing.BOOLEAN_COLUMN_CATEGORIES))
 # feature_columns.append(rain_today_feature_column)
 
 ### Define the model ###

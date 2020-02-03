@@ -21,9 +21,7 @@ The data was sourced from this [Kaggle dataset](https://www.kaggle.com/jsphyg/we
 
 ## Data preprocessing
 
-Data preprocessing is done by a combination of Pandas (to drop NaN rows and map Yes/No strings into 1/0 binary integers), scikit-learn (to scale/normalize numeric columns by calculating the z-score of each of their values), and Tensorflow to apply one-hot encoding to categorical columns. The model's input layer is thus a combination of pre-normalized numeric columns and one-hot encoded categorical columns.
-
-This is done as a two-step process to speed up the runtime: when required, the `normalize_and_transform_input_data` method reads the CSV with the original dataset (`raw_data.csv`), applies the preprocessing transformations, and exports the result to a new CSV file (`data.csv`). Subsequent executions of the file simply read the latter file, rather than run the preprocessing every time.
+Data preprocessing is done by a combination of Pandas (to drop NaN rows and map Yes/No strings into 1/0 binary integers), scikit-learn (to scale/normalize numeric features by calculating the z-score of each of their values), and Tensorflow to apply one-hot encoding to categorical features. The model's input layer is thus a combination of pre-normalized numeric features and one-hot encoded categorical features.
 
 The following columns were skipped and not used as features for the model; all the rest were used:
 
@@ -39,9 +37,9 @@ The output of the model is just a single sigmoid-activation neuron which predict
 
 ## Setup
 
-Clone the Git repository.
+* Clone the Git repository.
 
-Install the dependencies:
+* Install the dependencies:
 
 ```bash
 pip install -r dependencies.txt
@@ -62,7 +60,7 @@ After training, run:
 ```
 $ tensorboard --logdir logs/fit
 Serving TensorBoard on localhost; to expose to the network, use a proxy or pass --bind_all
-TensorBoard 2.0.1 at http://localhost:6006/ (Press CTRL+C to quit)
+TensorBoard 2.1.0 at http://localhost:6006/ (Press CTRL+C to quit)
 ```
 
 Then open the above URL in your browser to view the model in TensorBoard.
