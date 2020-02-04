@@ -1,6 +1,8 @@
 # Binary classification machine learning model to predict whether it will rain tomorrow in Australia.
 
-This is a Tensorflow 2 and Keras neural network that uses binary classification to predict whether, given meteorological observations of a given day at a given weather station in Australia, it will rain there the next day. The model is trained and tested on a dataset containing about 10 years of daily weather observations from numerous Australian weather stations.
+This is a neural network that uses binary classification to predict whether, given meteorological observations of a given day at a given weather station in Australia, it will rain there the next day. The model is trained and tested on a dataset containing about 10 years of daily weather observations from numerous Australian weather stations.
+
+There are two separate implementations in this project: one using Tensorflow 2 and Keras, and another using scikit-learn.
 
 The model currently has an accuracy of approximately 87%. Given that it doesn't rain exactly 50% of days, there are a lot more rows in the dataset where the target "RainTomorrow" column has a "No" value than "Yes". This means that you can make a complete guess and be right by random chance about 70% of the time. My goal was therefore to get the model accuracy to somewhere around 90%.
 
@@ -48,7 +50,13 @@ pip install -r dependencies.txt
 ## Run
 
 ```bash
-python -W ignore main.py
+python -W ignore tensor_flow.py
+```
+
+or
+
+```bash
+python -W ignore scikit_learn.py
 ```
 
 Note that there is a [current bug in TensorFlow](https://github.com/tensorflow/tensorflow/issues/30609) where deprecation warnings are printed at the usage of feature columns, even though the new feature column API is indeed being used. It has been fixed and will be in a future release of TensorFlow. In the meantime, will just have to live with the warning output.

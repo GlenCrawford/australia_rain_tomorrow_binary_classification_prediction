@@ -21,12 +21,7 @@ full_data_set = pd.read_csv(
 
 labels = full_data_set.pop('RainTomorrow').values
 
-# Apply one-hot encoding to categorical columns.
-full_data_set = pd.get_dummies(
-  full_data_set,
-  columns = ['Location', 'WindGustDir', 'WindDir9am', 'WindDir3pm'],
-  sparse = False
-)
+full_data_set = data_preprocessing.one_hot_encode_categorical_columns(full_data_set)
 
 # Split the full data set up into two, one for training and one for testing.
 train_data_set, test_data_set, train_labels, test_labels = sklearn.model_selection.train_test_split(
